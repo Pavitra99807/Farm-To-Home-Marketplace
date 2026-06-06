@@ -16,6 +16,7 @@ import {
   FaTruck,
   FaShieldAlt,
   FaChartLine,
+  FaMailBulk,
 } from "react-icons/fa";
 
 const Home = () => {
@@ -192,6 +193,8 @@ const Home = () => {
               Farmer Dashboard
             </Link>
 
+           
+
             <a
               href="#fresh-products"
               className="bg-white text-slate-900 px-5 py-3 rounded font-semibold shadow"
@@ -311,7 +314,7 @@ const Home = () => {
 
             <div className="mt-5 space-y-3">
               <a
-                href="https://wa.me/919999999999"
+                href="https://wa.me/919740848658"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-3 bg-white/10 hover:bg-white/20 p-3 rounded"
@@ -337,6 +340,16 @@ const Home = () => {
                 <FaMobileAlt />
                 Application Link
               </a>
+                {/* Mail */}
+  <a
+  href="https://mail.google.com/mail/?view=cm&fs=1&to=formtohome1@gmail.com"
+  target="_blank"
+  rel="noreferrer"
+  className="flex items-center gap-3 bg-white/10 hover:bg-white/20 p-3 rounded"
+>
+  <FaMailBulk />
+  Mail Us
+</a>
             </div>
           </aside>
           </div>

@@ -87,8 +87,6 @@ const getAllProducts = async (
 
   try {
 
-    await publishApprovedFarmerProducts();
-
     const data =
       await Product.find({});
 
@@ -99,16 +97,11 @@ const getAllProducts = async (
 
   } catch (error) {
 
-    console.log(
-      "GET PRODUCT ERROR:",
-      error
-    );
-
     return res.status(500).json({
       success: false,
-      message:
-        error.message,
+      message: error.message,
     });
+
   }
 };
 
@@ -150,6 +143,7 @@ const deleteProduct = async (
   req,
   res
 ) => {
+  console.log("DELETE ID =", req.params.id);
 
   try {
 

@@ -19,14 +19,6 @@ import {
 import {
   setDataProduct,
 } from "./redux/productSlice";
-import AdminMessages
-from "./page/AdminMessages";
-import MyMessages
-from "./page/MyMessages";
-import EditProfile
-from "./page/EditProfile";
-import { Toaster }
-from "react-hot-toast";
 
 const App = () => {
 
@@ -36,7 +28,7 @@ const App = () => {
     location.pathname === "/";
 
   // DARK MODE
-  const [darkMode, setDarkMode] =
+  const [darkMode] =
     useState(
       JSON.parse(
         localStorage.getItem(

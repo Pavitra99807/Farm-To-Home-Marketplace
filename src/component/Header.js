@@ -21,8 +21,11 @@ import {
 import {
   useTranslation,
 } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
   const isHomePage =
     location.pathname === "/";
@@ -75,7 +78,7 @@ const Header = () => {
     (state) => state.user
   );
 
-  const dispatch = useDispatch();
+ 
 
   const cartItemNumber = useSelector(
     (state) => state.product.cartItem
@@ -89,15 +92,18 @@ const Header = () => {
   };
 
   // LOGOUT
- const handleLogout = () => {
-
+const handleLogout = () => {
   dispatch(logoutRedux());
 
-  dispatch(loadUserData());
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+  sessionStorage.clear();
 
-  toast.success(
-    "Logout successfully"
-  );
+  toast.success("Logout successfully");
+
+  navigate("/");
+
+  window.location.reload();
 };
 
   return (
@@ -129,6 +135,8 @@ const Header = () => {
             <Link to={"contact"} className={navLinkClass}>
               Contact
             </Link>
+
+            
 
             {userData?.email && (
               <Link to={"profile"} className={navLinkClass}>
@@ -410,6 +418,13 @@ userData?.email === "admin@gmail.com" ? (
                     className="px-4 py-2"
                   >
                     Contact
+                  </Link>
+
+                  <Link
+                    to={"smart-tools"}
+                    className="px-4 py-2"
+                  >
+                    Smart Tools
                   </Link>
 
                 </nav>

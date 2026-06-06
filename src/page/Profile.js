@@ -30,9 +30,10 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
-
+const navigate = useNavigate();
   const dispatch = useDispatch();
 
   // USER DATA
@@ -82,14 +83,14 @@ setOrders] =
 useState([]);
 
   // LOGOUT
-  const handleLogout = () => {
+ const handleLogout = () => {
 
-    dispatch(logoutRedux());
+  localStorage.clear();
 
-    toast.success(
-      "Logout successful"
-    );
-  };
+  toast.success("Logout successfully");
+
+  navigate("/");
+};
 
   return (
 

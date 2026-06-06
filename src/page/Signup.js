@@ -23,17 +23,7 @@ const Signup = () => {
     image: "",
     role: "user",
   });
-  const [otp,
-setOtp] =
-useState("");
-
-const [otpSent,
-setOtpSent] =
-useState(false);
-
-const [otpVerified,
-setOtpVerified] =
-useState(false);
+ 
 
   const navigate = useNavigate();
   const API_BASE = "http://localhost:8050";
@@ -60,92 +50,8 @@ useState(false);
       }));
     };
   };
-//SEND OTP FUNCTION//
-const handleSendOTP =
-async () => {
 
-  try {
 
-    if (!data.email) {
-
-      toast.error(
-        "Enter email first"
-      );
-
-      return;
-    }
-
-    const res =
-    await axios.post(
-
-      "http://localhost:8050/api/user/send-otp",
-
-      {
-        email:
-        data.email,
-      }
-    );
-
-    if (
-      res.data.success
-    ) {
-
-      toast.success(
-        "OTP sent to email"
-      );
-
-      setOtpSent(true);
-    }
-
-  } catch (error) {
-
-    console.log(error);
-
-    toast.error(
-      "Failed to send OTP"
-    );
-  }
-};
-//VERIFY OTP FUNCTION//
-const handleVerifyOTP =
-async () => {
-
-  try {
-
-    const res =
-    await axios.post(
-
-      "http://localhost:8050/api/user/verify-otp",
-
-      {
-
-        email:
-        data.email,
-
-        otp,
-      }
-    );
-
-    if (
-      res.data.success
-    ) {
-
-      toast.success(
-        "OTP verified"
-      );
-
-      setOtpVerified(true);
-    }
-
-  } catch (error) {
-
-    console.log(error);
-
-    toast.error(
-      "Invalid OTP"
-    );
-  }
-};
 //
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -295,51 +201,15 @@ async () => {
             </label>
           </div>
 
-         <input
-    type="email"
-    name="email"
-    placeholder="Email"
-    value={data.email}
-    onChange={handleOnChange}
-    className="w-full bg-slate-200 px-2 py-1 rounded"
-  />
-  <button
-    type="button"
-    onClick={handleSendOTP}
-    className="bg-blue-500 text-white px-3 rounded"
-  >
-
-    Send OTP
-
-  </button>
-  {otpSent && !otpVerified && (
-
-  <div className="flex gap-2 mt-2">
-
-    <input
-      type="text"
-      placeholder="Enter OTP"
-      value={otp}
-      onChange={(e) =>
-        setOtp(
-          e.target.value
-        )
-      }
-      className="w-full bg-slate-200 px-2 py-1 rounded"
-    />
-
-    <button
-      type="button"
-      onClick={handleVerifyOTP}
-      className="bg-green-500 text-white px-3 rounded"
-    >
-
-      Verify
-
-    </button>
-
-  </div>
-)}
+       <input
+  type="email"
+  name="email"
+  placeholder="Email"
+  value={data.email}
+  onChange={handleOnChange}
+  className="bg-slate-200 p-2 my-1 rounded"
+/>
+  
 
           {/* PASSWORD */}
           <div className="flex bg-slate-200 p-2 rounded my-1">

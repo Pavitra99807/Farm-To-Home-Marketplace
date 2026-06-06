@@ -87,8 +87,18 @@ const AdminFarmerProducts = () => {
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
+         
           <option value="">All</option>
         </select>
+        
+         <input
+  type="number"
+  placeholder="Selling Price"
+/>
+
+<button>
+  Move To Store
+</button>
       </div>
 
       {loading && <p className="text-blue-600">Loading farmer requests...</p>}

@@ -23,8 +23,14 @@ const MyMessages = () => {
   // =========================
   // FETCH USER MESSAGES
   // =========================
-  const fetchMessages =
-  async () => {
+  useEffect(() => {
+
+    if (!email) {
+      return;
+    }
+
+    const fetchMessages =
+    async () => {
 
     try {
 
@@ -41,13 +47,11 @@ const MyMessages = () => {
 
       console.log(error);
     }
-  };
-
-  useEffect(() => {
+    };
 
     fetchMessages();
 
-  }, []);
+  }, [email]);
 
   return (
 

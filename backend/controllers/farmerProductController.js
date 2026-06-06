@@ -100,6 +100,8 @@ const submitFarmerProduct =
 async (req, res) => {
 
   try {
+    console.log("BODY =", req.body);
+console.log("USER =", req.user);
 
     const {
 
@@ -140,12 +142,14 @@ async (req, res) => {
         "Product name, category, quantity and farmer price are required",
       });
     }
+    console.log("REQ USER =", req.user);
 
     // CHECK FARMER
     const farmer =
     await User.findById(
       req.user.userId
     );
+    console.log("FARMER =", farmer);
 
     if (
 
@@ -170,8 +174,10 @@ async (req, res) => {
       productName
     );
 
+    console.log("IMAGE RECEIVED =", image);
     // CREATE PRODUCT
     const product =
+    
     await FarmerProduct.create({
 
       farmerId:
@@ -195,7 +201,7 @@ async (req, res) => {
 
       category,
 
-      image,
+      image: image || "",
 
       quantity:
       Number(quantity),
@@ -244,17 +250,15 @@ async (req, res) => {
     });
 
   } catch (error) {
+  console.log("========== FARMER PRODUCT ERROR ==========");
+  console.log(error);
 
-    console.log(error);
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-      error.message,
-    });
-  }
+  return res.status(500).json({
+    success: false,
+    message: error.message,
+    error: error,
+  });
+}
 };
 
 // =========================
@@ -412,53 +416,7 @@ async (req, res) => {
     adminRemark || "";
 
     // APPROVED PRODUCT
-    if (
-
-      status === "approved"
-
-      &&
-
-      !farmerProduct.approvedProductId
-
-    ) {
-
-      const approvedProduct =
-      await Product.create({
-
-        name:
-        farmerProduct.productName,
-
-        price:
-        farmerProduct.farmerPrice,
-
-        image:
-        farmerProduct.image,
-
-        category:
-        farmerProduct.category,
-
-        description:
-        farmerProduct.description,
-
-        stock:
-        farmerProduct.quantity,
-
-        sellerType:
-        "farmer",
-
-        farmerProductId:
-        farmerProduct._id,
-
-        farmerId:
-        farmerProduct.farmerId,
-
-        farmerName:
-        farmerProduct.farmerName,
-      });
-
-      farmerProduct.approvedProductId =
-      approvedProduct._id;
-    }
+  
 
     await farmerProduct.save();
 
@@ -486,18 +444,131 @@ async (req, res) => {
     });
   }
 };
+// =========================
+// MOVE PRODUCT TO STORE
+// =========================
+
+const moveProductToStore = async (req, res) => {
+  console.log("MOVE STORE API HIT");
+console.log(req.params);
+console.log(req.body);
+
+  try {
+
+    const { id } = req.params;
+
+    const { sellingPrice } = req.body;
+
+    const farmerProduct =
+      await FarmerProduct.findById(id);
+
+    if (!farmerProduct) {
+
+      return res.status(404).json({
+        success: false,
+        message: "Product not found"
+      });
+
+    }
+const existingProduct = await Product.findOne({
+  name: {
+    $regex: `^${farmerProduct.productName.trim()}$`,
+    $options: "i"
+  }
+});
+
+if (existingProduct) {
+
+  existingProduct.price = Number(sellingPrice);
+
+  existingProduct.image =
+    farmerProduct.image || existingProduct.image;
+
+  existingProduct.category =
+    farmerProduct.category;
+
+  existingProduct.description =
+    farmerProduct.description;
+
+  existingProduct.stock =
+    farmerProduct.quantity;
+
+  await existingProduct.save();
+
+} else {
+
+  await Product.create({
+
+    name: farmerProduct.productName,
+
+    price: Number(sellingPrice),
+
+    image: farmerProduct.image,
+
+    category: farmerProduct.category,
+
+    description: farmerProduct.description,
+
+    stock: farmerProduct.quantity
+
+  });
+
+}
+
+    farmerProduct.storePublished = true;
+
+await farmerProduct.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Moved to Store"
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
+const getApprovedFarmerProducts = async (req, res) => {
+
+  try {
+
+    const products =
+      await FarmerProduct.find({
+        status: "approved"
+      });
+
+    res.status(200).json({
+      success: true,
+      data: products
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
 
 module.exports = {
 
   getMarketPriceList,
-
   searchMarketPrice,
-
   submitFarmerProduct,
-
   getMyFarmerProducts,
-
   getAdminFarmerProducts,
-
   updateFarmerProductStatus,
+  getApprovedFarmerProducts,
+  moveProductToStore
+
 };

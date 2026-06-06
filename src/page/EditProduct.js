@@ -15,47 +15,6 @@ import { toast } from "react-hot-toast";
 const EditProduct = () => {
 
   const { id } = useParams();
-  useEffect(() => {
-
-  fetchProduct();
-
-}, []);
-
-const fetchProduct = async () => {
-
-  try {
-
-    const res = await axios.get(
-      `http://localhost:8050/api/product/${id}`
-    );
-
-    const product =
-      res.data.data;
-
-    setData({
-
-      name:
-        product.name || "",
-
-      category:
-        product.category || "",
-
-      price:
-        product.price || "",
-
-      description:
-        product.description || "",
-
-      image:
-        product.image || "",
-    });
-
-  } catch (error) {
-
-    console.log(error);
-  }
-};
-
   const navigate = useNavigate();
 
   const [data, setData] = useState({
@@ -67,6 +26,46 @@ const fetchProduct = async () => {
   });
 
   // FETCH PRODUCT
+  useEffect(() => {
+
+    const fetchProduct = async () => {
+
+      try {
+
+        const res = await axios.get(
+          `http://localhost:8050/api/product/${id}`
+        );
+
+        const product =
+          res.data.data;
+
+        setData({
+
+          name:
+            product.name || "",
+
+          category:
+            product.category || "",
+
+          price:
+            product.price || "",
+
+          description:
+            product.description || "",
+
+          image:
+            product.image || "",
+        });
+
+      } catch (error) {
+
+        console.log(error);
+      }
+    };
+
+    fetchProduct();
+
+  }, [id]);
 
 
   // CHANGE

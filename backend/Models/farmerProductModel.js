@@ -36,11 +36,16 @@ const farmerProductSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+   
     farmerPrice: {
       type: Number,
       required: true,
       min: 0,
     },
+     adminSellingPrice:{
+  type:Number,
+  default:0
+},
     description: {
       type: String,
       default: "",

@@ -78,8 +78,14 @@ const initialState = {
 // =========================
 // SAVE CART
 // =========================
+const getStorageEmail = () => {
+  const user = getUser();
+
+  return user?.email || "guest";
+};
+
 const saveCartToLocalStorage =
-(cartItems, email) => {
+(cartItems, email = getStorageEmail()) => {
 
   try {
 
@@ -127,7 +133,7 @@ const saveCartToLocalStorage =
 // SAVE WISHLIST
 // =========================
 const saveWishlistToLocalStorage =
-(wishlist, email) => {
+(wishlist, email = getStorageEmail()) => {
 
   try {
 
@@ -246,6 +252,8 @@ const productSlice = createSlice({
     action.payload.image,
 
   qty: 1,
+  total:
+    action.payload.price,
 };
 
 state.cartItem.push(product);

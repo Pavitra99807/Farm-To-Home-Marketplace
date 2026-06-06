@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -7,8 +7,6 @@ import { toast } from "react-hot-toast";
 const Checkout = () => {
 
   const navigate = useNavigate();
-
-  const dispatch = useDispatch();
 
   const cartItems = useSelector(
     (state) => state.product.cartItem || []
@@ -128,19 +126,6 @@ const orderData = {
       console.log("ORDER RESPONSE:", res.data);
 
      if (res.data.success) {
-
- // SAVE ORDER TO LOCAL STORAGE
-
-const user =
-  JSON.parse(
-    localStorage.getItem("user")
-  );
-
-
-
-
-// PUSH NEW ORDER
-
 
 toast.success(
   "Order placed successfully"

@@ -3,6 +3,9 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { getKarnatakaMandiPrices } from "../services/mandiService";
+
 import {
   FaMicrophone,
   FaCloudUploadAlt,
@@ -11,6 +14,8 @@ import {
   FaChartLine,
 } from "react-icons/fa";
 import farmerDashboardVideo from "../assest/farmer-dashboard-bg.mp4";
+import { calculateLogistics } from "../services/logisticsService";
+import locationData from "../data/locationData";
 
 const API_BASE = "http://localhost:8050";
 
@@ -19,17 +24,344 @@ const emptyForm = {
   category: "vegetable",
   image: "",
   quantity: "",
+  unit: "Quintal",
   marketPrice: "",
   farmerPrice: "",
   description: "",
 };
+const WAREHOUSE = {
+  lat: 12.9237,
+  lng: 77.4987,
+};
+const districtCoordinates = {
+  Mysuru: {
+    lat: 12.2958,
+    lng: 76.6394,
+  },
+
+  Mandya: {
+    lat: 12.5223,
+    lng: 76.8975,
+  },
+
+  Ramanagara: {
+    lat: 12.7219,
+    lng: 77.2815,
+  },
+
+  BengaluruUrban: {
+    lat: 12.9716,
+    lng: 77.5946,
+  },
+};
+const calculateDistance = (
+  lat1,
+  lon1,
+  lat2,
+  lon2
+) => {
+  const R = 6371;
+
+  const dLat =
+    ((lat2 - lat1) * Math.PI) / 180;
+
+  const dLon =
+    ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) *
+      Math.sin(dLat / 2) +
+    Math.cos(
+      (lat1 * Math.PI) / 180
+    ) *
+      Math.cos(
+        (lat2 * Math.PI) / 180
+      ) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+
+  return Math.round(R * c);
+};
 
 const FarmerDashboard = () => {
+ const navigate = useNavigate();
   const user = useSelector((state) => state.user);
-  const { t, i18n } = useTranslation();
-  const [marketPrices, setMarketPrices] = useState([]);
+const { t, i18n } = useTranslation();
+
+
+const [descriptionListening, setDescriptionListening] =
+useState(false);
+  
   const [products, setProducts] = useState([]);
+  
+ const [weather,setWeather] =
+useState(null);
+
+
+const [showWeather,
+setShowWeather] =
+useState(false);
+
+const [forecast, setForecast] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [marketPrices, setMarketPrices] = useState([]);
+  const [mandiPrices, setMandiPrices] = useState([]);
+ 
+  const [logisticsData, setLogisticsData] = useState(null);
+  const [activeTab, setActiveTab] = useState("vegetables");
+const [selectedState, setSelectedState] = useState("");
+const [selectedDistrict, setSelectedDistrict] = useState("");
+const [selectedHobli, setSelectedHobli] = useState("");
+const [villageName, setVillageName] = useState("");
+
+const [deliveryOption, setDeliveryOption] =
+  useState("company");
+
+const [distance, setDistance] = useState(0);
+
+const [logisticsCost, setLogisticsCost] =
+  useState(0);
+
+  console.log("FORM PRODUCT =", form.productName);
+console.log("MARKET PRICES =", marketPrices);
+ const selectedMarket = useMemo(() => {
+  const productName = form.productName.trim().toLowerCase();
+
+
+  return mandiPrices.find(
+    (item) =>
+      item.commodity?.toLowerCase() === productName
+  );
+}, [form.productName, mandiPrices]);
+
+  
+  useEffect(() => {
+  if (!selectedDistrict) return;
+
+  const districtData =
+    districtCoordinates[
+      selectedDistrict
+    ];
+
+  const km =
+    calculateDistance(
+      districtData.lat,
+      districtData.lng,
+      WAREHOUSE.lat,
+      WAREHOUSE.lng
+    );
+
+  setDistance(km);
+
+  if (
+    deliveryOption ===
+    "company"
+  ) {
+    setLogisticsCost(
+      km * 8
+    );
+  } else {
+    setLogisticsCost(0);
+  }
+}, [
+  selectedDistrict,
+  deliveryOption
+]);
+useEffect(() => {
+  if (!selectedMarket || !form.quantity) return;
+
+  const qty = Number(form.quantity);
+
+ const mandiRate = Number(
+  (
+    selectedMarket.price ||
+    selectedMarket.avgPrice ||
+    0
+  )
+    .toString()
+    .replace(/[^\d]/g, "")
+);
+
+  let totalAmount = 0;
+
+  if (form.unit === "Quintal") {
+    totalAmount = qty * mandiRate;
+  } else {
+    totalAmount = qty * (mandiRate / 100);
+  }
+
+  setForm((prev) => ({
+    ...prev,
+    marketPrice: mandiRate,
+    farmerPrice: totalAmount.toFixed(0),
+  }));
+}, [form.quantity, form.unit, selectedMarket]);
+const vegetables = [
+  "Tomato",
+  "Onion",
+  "Potato",
+  "Carrot",
+  "Beans",
+  "Ladies Finger",
+  "Brinjal",
+  "Cabbage",
+  "Cauliflower",
+  "Capsicum",
+  "Knool Khol",
+  "Sesamum(Sesame,Gingelly,Til)"
+];
+const fruits = [
+  "Banana",
+  "Mango",
+  "Orange",
+  "Papaya",
+  "Grapes",
+  "Pomegranate"
+];
+
+const grains = [
+  "Ragi",
+  "Wheat",
+  "Groundnut",
+  "Sunflower",
+  "Maize",
+  "Jowar(Sorghum)",
+  "Bajra(Pearl Millet/Cumbu)",
+  "Arecanut(Betelnut/Supari)"
+];
+useEffect(() => {
+  if (!form.productName) return;
+
+  const veg = vegetables.includes(form.productName);
+  const fruit = fruits.includes(form.productName);
+  const grain = grains.includes(form.productName);
+
+  if (veg) {
+    setForm(prev => ({
+      ...prev,
+      category: "vegetable"
+    }));
+  } else if (fruit) {
+    setForm(prev => ({
+      ...prev,
+      category: "fruit"
+    }));
+  } else if (grain) {
+    setForm(prev => ({
+      ...prev,
+      category: "grain"
+    }));
+  }
+
+}, [form.productName]);
+const states =
+  Object.keys(locationData);
+
+const districts =
+  selectedState
+    ? Object.keys(
+        locationData[selectedState]
+      )
+    : [];
+
+const hoblis =
+  selectedState &&
+  selectedDistrict
+    ? locationData[selectedState][selectedDistrict]
+    : [];
+const vegetablePrices = [
+  ...new Map(
+    mandiPrices
+      .filter(item => vegetables.includes(item.commodity))
+      .map(item => [item.commodity.toLowerCase(), item])
+  ).values(),
+];
+
+const fruitPrices = [
+  ...new Map(
+    mandiPrices
+      .filter(item => fruits.includes(item.commodity))
+      .map(item => [item.commodity.toLowerCase(), item])
+  ).values(),
+];
+
+const grainPrices = [
+  ...new Map(
+    mandiPrices
+      .filter(item => grains.includes(item.commodity))
+      .map(item => [item.commodity.toLowerCase(), item])
+  ).values(),
+];
+const kannadaNames = {
+  // Vegetables
+  Tomato: "ಟೊಮ್ಯಾಟೊ",
+  Onion: "ಈರುಳ್ಳಿ",
+  Potato: "ಆಲೂಗಡ್ಡೆ",
+  Carrot: "ಕ್ಯಾರೆಟ್",
+  Beans: "ಬೀನ್ಸ್",
+  "Ladies Finger": "ಬೆಂಡೆಕಾಯಿ",
+  Brinjal: "ಬದನೆಕಾಯಿ",
+  Cabbage: "ಎಲೆಕೋಸು",
+  Cauliflower: "ಹೂಕೋಸು",
+  Capsicum: "ದಪ್ಪ ಮೆಣಸಿನಕಾಯಿ",
+
+  // Fruits
+  Banana: "ಬಾಳೆಹಣ್ಣು",
+  Mango: "ಮಾವು",
+  Orange: "ಕಿತ್ತಳೆ",
+  Papaya: "ಪಪ್ಪಾಯಿ",
+  Grapes: "ದ್ರಾಕ್ಷಿ",
+  Pomegranate: "ದಾಳಿಂಬೆ",
+
+  // Grains
+  Ragi: "ರಾಗಿ",
+  Wheat: "ಗೋಧಿ",
+  Groundnut: "ಕಡಲೆಕಾಯಿ",
+  Sunflower: "ಸೂರ್ಯಕಾಂತಿ",
+  Maize: "ಮೆಕ್ಕೆಜೋಳ",
+  "Arecanut(Betelnut/Supari)": "ಅಡಿಕೆ",
+  "Bajra(Pearl Millet/Cumbu)": "ಸಜ್ಜೆ",
+   "Jowar(Sorghum)": "ಜೋಳ",
+  "Bajra(Pearl Millet/Cumbu)": "ಸಜ್ಜೆ",
+  
+  
+  
+};
+const kannadaMarket = {
+  Yeshwanthpur: "ಯಶವಂತಪುರ",
+  Nanjangud: "ನಂಜನಗೂಡು",
+  Gundlupet: "ಗುಂಡ್ಲುಪೇಟೆ",
+  Ramanagara: "ರಾಮನಗರ",
+  Malur: "ಮಾಲೂರು",
+  Honnali: "ಹೊನ್ನಾಳಿ",
+  Shikaripura: "ಶಿಕಾರಿಪುರ",
+  Lingasugur: "ಲಿಂಗಸುಗೂರು",
+  Ballari: "ಬಳ್ಳಾರಿ",
+  Theerthahalli: "ತೀರ್ಥಹಳ್ಳಿ"
+};
+
+const kannadaDistrict = {
+  "Bangalore Urban": "ಬೆಂಗಳೂರು ನಗರ",
+  Mysuru: "ಮೈಸೂರು",
+  Shivamogga: "ಶಿವಮೊಗ್ಗ",
+  Davangere: "ದಾವಣಗೆರೆ",
+  Chamarajanagar: "ಚಾಮರಾಜನಗರ",
+  Kolar: "ಕೋಲಾರ",
+  Raichur: "ರಾಯಚೂರು",
+  Ballary: "ಬಳ್ಳಾರಿ",
+  Bellary: "ಬಳ್ಳಾರಿ",
+  "Bangalore Urban": "ಬೆಂಗಳೂರು ನಗರ",
+  Chamarajanagar: "ಚಾಮರಾಜನಗರ"
+};
+
+
   const generateDescription =
 (product) => {
 
@@ -139,16 +471,7 @@ speech.onend = () => {
 
   const token = user.token || localStorage.getItem("token");
 
-  const selectedMarket = useMemo(() => {
-    const productName = form.productName.trim().toLowerCase();
 
-    return marketPrices.find((item) => {
-      return (
-        item.crop.toLowerCase() === productName ||
-        item.kannadaName === form.productName.trim()
-      );
-    });
-  }, [form.productName, marketPrices]);
 
   
 
@@ -181,7 +504,7 @@ speech.onend = () => {
     if (selectedMarket) {
       setForm((prev) => ({
         ...prev,
-        marketPrice: selectedMarket.price,
+        marketPrice: selectedMarket.avgPrice,
         category: selectedMarket.category,
       }));
     }
@@ -239,20 +562,37 @@ speech.onend = () => {
   }
 };
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+ const handleImageUpload = (e) => {
+  const file = e.target.files[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((prev) => ({
-        ...prev,
-        image: reader.result,
-      }));
-    };
-    reader.readAsDataURL(file);
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    setForm((prev) => ({
+      ...prev,
+      image: reader.result,
+    }));
   };
+
+  reader.readAsDataURL(file);
+};
+ const loadMandiPrices = async () => {
+  try {
+    const data = await getKarnatakaMandiPrices();
+
+    console.log("MANDI DATA =", data);
+
+    setMandiPrices(data || []);
+  } catch (err) {
+    console.log("MANDI ERROR =", err);
+  }
+};
+
+useEffect(() => {
+  loadMandiPrices();
+}, []);
 
   const startKannadaVoice = () => {
     window.speechSynthesis.resume();
@@ -265,6 +605,7 @@ speech.onend = () => {
       toast.error("Voice input is not supported in this browser");
       return;
     }
+  
 
     const recognition = new SpeechRecognition();
     recognition.lang = "kn-IN";
@@ -400,6 +741,7 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
       return;
     }
 
+    console.log("SUBMIT FORM =", form);
     if (!form.productName || !form.quantity || !form.farmerPrice) {
       toast.error("Please complete product name, quantity and farmer price");
       return;
@@ -408,14 +750,36 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
     try {
       setLoading(true);
 
-      await axios.post(
-        `${API_BASE}/api/farmer-products/submit`,
-        {
-          ...form,
-          marketPrice: Number(form.marketPrice || selectedMarket?.price || 0),
-          quantity: Number(form.quantity),
-          farmerPrice: Number(form.farmerPrice),
-        },
+    await axios.post(
+  `${API_BASE}/api/farmer-products/submit`,
+  {
+    ...form,
+    state:
+  selectedState,
+
+district:
+  selectedDistrict,
+
+hobli:
+  selectedHobli,
+
+village:
+  villageName,
+
+deliveryOption,
+
+distanceToWarehouse:
+  distance,
+
+logisticsCost:
+  logisticsCost,
+
+    
+
+    marketPrice: Number(form.marketPrice),
+    quantity: Number(form.quantity),
+    farmerPrice: Number(form.farmerPrice),
+  },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -433,30 +797,134 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
       setLoading(false);
     }
   };
+const startDescriptionVoice = () => {
+
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Voice not supported");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang =
+    i18n.language === "kn"
+      ? "kn-IN"
+      : "en-IN";
+
+  recognition.onstart = () =>
+    setDescriptionListening(true);
+
+  recognition.onend = () =>
+    setDescriptionListening(false);
+
+  recognition.onresult = (event) => {
+
+    const text =
+      event.results[0][0].transcript;
+
+    setForm((prev) => ({
+      ...prev,
+      description: text,
+    }));
+  };
+
+  recognition.start();
+};
+const getWeather = async () => {
+
+  navigator.geolocation.getCurrentPosition(
+
+    async (position) => {
+
+      try {
+
+        const res = await axios.post(
+          "http://localhost:8050/api/weather/current",
+          {
+            latitude:
+              position.coords.latitude,
+
+            longitude:
+              position.coords.longitude,
+          }
+        );
+
+        if (res.data.success) {
+
+          setWeather(
+            res.data.data
+          );
+
+          setShowWeather(true);
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+        alert("Weather fetch failed");
+      }
+    }
+
+  );
+};
+const getForecast = async () => {
+
+  navigator.geolocation.getCurrentPosition(
+
+    async (position) => {
+
+      try {
+
+        const res = await axios.post(
+          "http://localhost:8050/api/weather/forecast",
+          {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }
+        );
+console.log("FORECAST =", res.data);
+        if (res.data.success) {
+
+          setForecast(res.data.data);
+
+        }
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+  );
+
+};
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 p-4 md:p-6">
-      <video
-        className="fixed inset-0 h-full w-full object-cover"
-        src={farmerDashboardVideo}
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
+   
 
       <div className="fixed inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/48 to-slate-950/12" />
 
-      <div className="relative min-h-screen grid grid-cols-1 xl:grid-cols-[minmax(0,760px)_1fr] gap-6">
-      <div className="space-y-6 max-w-[760px]">
-        <section className="bg-white/90 dark:bg-slate-900/88 backdrop-blur border border-white/30 dark:border-slate-700 rounded-lg p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xl">
+      <div className="relative min-h-screen">
+     <div className="space-y-6 w-full">
+        <section className="w-full bg-white/90 dark:bg-slate-900/88 backdrop-blur border border-white/30 dark:border-slate-700 rounded-lg p-5">
           <div>
             <p className="text-sm font-semibold text-emerald-600">
               {t("welcome")}
             </p>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-              {user.firstname || "Farmer"} - {t("farmerDashboard")}
-            </h1>
+           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+  {user.firstname || "Farmer"} - {t("farmerDashboard")}
+</h1>
+
+
             <p className="text-slate-500 mt-1">
               Rural-first selling with market intelligence, Kannada voice input,
               and admin verified trust.
@@ -478,6 +946,162 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
             </button>
           </div>
         </section>
+         
+     <video
+ className="w-full h-[550px] object-cover rounded-xl"
+        src={farmerDashboardVideo}
+        autoPlay
+        muted
+        loop
+        playsInline
+      />
+        <div className="bg-white rounded-lg p-4 shadow-xl">
+  
+</div>
+  
+        <div className="bg-white rounded-lg p-5 shadow-xl">
+
+ <h2 className="text-2xl font-bold mb-4">
+  {i18n.language === "kn"
+    ? "ನೇರ ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು"
+    : "Live Market Prices"}
+</h2>
+
+
+<div className="flex gap-3 mb-5">
+  <button
+    onClick={() => setActiveTab("vegetables")}
+    className={`px-4 py-2 rounded-lg ${
+      activeTab === "vegetables"
+        ? "bg-green-600 text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    🥬 {i18n.language === "kn" ? "ತರಕಾರಿಗಳು" : "Vegetables"}
+  </button>
+
+  <button
+    onClick={() => setActiveTab("fruits")}
+    className={`px-4 py-2 rounded-lg ${
+      activeTab === "fruits"
+        ? "bg-orange-500 text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    🍎 {i18n.language === "kn" ? "ಹಣ್ಣುಗಳು" : "Fruits"}
+  </button>
+
+  <button
+    onClick={() => setActiveTab("grains")}
+    className={`px-4 py-2 rounded-lg ${
+      activeTab === "grains"
+        ? "bg-yellow-500 text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    🌾 {i18n.language === "kn" ? "ಧಾನ್ಯಗಳು" : "Grains"}
+  </button>
+</div>
+{activeTab === "vegetables" && (
+  <div className="flex gap-4 overflow-x-auto pb-3">
+    {vegetablePrices.map((item,index) => (
+      <div
+        key={index}
+        className="min-w-[280px] bg-green-50 p-4 rounded-lg border"
+      >
+       <h5>
+{i18n.language === "kn"
+ ? (kannadaNames[item.commodity] || item.commodity)
+ : item.commodity}
+</h5>
+        <p className="text-green-700 font-bold">
+         {item.avgPrice.includes("Rs")
+ ? `${item.avgPrice} / Quintal`
+ : `₹ ${item.avgPrice} / Quintal`}
+        </p>
+
+     <p>
+{i18n.language === "kn"
+ ? (kannadaMarket[item.market] || item.market)
+ : item.market}
+</p>
+      <p>
+{i18n.language === "kn"
+ ? (kannadaDistrict[item.district] || item.district)
+ : item.district}
+</p>
+      </div>
+    ))}
+  </div>
+)}
+
+{activeTab === "fruits" && (
+  <div className="flex gap-4 overflow-x-auto pb-3">
+    {fruitPrices.map((item,index) => (
+      <div
+        key={index}
+        className="min-w-[280px] bg-orange-50 p-4 rounded-lg border"
+      >
+        <h4 className="font-bold">
+          {i18n.language === "kn"
+            ? kannadaNames[item.commodity] || item.commodity
+            : item.commodity}
+        </h4>
+
+        <p className="text-orange-700 font-bold">
+         ₹ {item.avgPrice} / Quintal
+        </p>
+
+        <p>
+{i18n.language === "kn"
+ ? (kannadaMarket[item.market] || item.market)
+ : item.market}
+</p>
+
+<p>
+{i18n.language === "kn"
+ ? (kannadaDistrict[item.district] || item.district)
+ : item.district}
+</p>
+      </div>
+    ))}
+  </div>
+)}
+
+{activeTab === "grains" && (
+  <div className="flex gap-4 overflow-x-auto pb-3">
+    {grainPrices.map((item,index) => (
+      <div
+        key={index}
+        className="min-w-[280px] bg-yellow-50 p-4 rounded-lg border"
+      >
+        <h4 className="font-bold">
+          {i18n.language === "kn"
+            ? kannadaNames[item.commodity] || item.commodity
+            : item.commodity}
+        </h4>
+
+        <p className="text-yellow-700 font-bold">
+         ₹ {item.avgPrice} / Quintal
+        </p>
+
+       <p>
+{i18n.language === "kn"
+ ? (kannadaMarket[item.market] || item.market)
+ : item.market}
+</p>
+
+<p>
+{i18n.language === "kn"
+ ? (kannadaDistrict[item.district] || item.district)
+ : item.district}
+</p>
+      </div>
+    ))}
+  </div>
+)}
+
+</div>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {marketPrices.map((item) => (
@@ -487,8 +1111,16 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-700 text-sm">{item.mandi}</p>
-                  <h2 className="text-xl font-bold">{item.crop}</h2>
+                  <p className="text-slate-700 text-sm">
+  {i18n.language === "kn"
+    ? (kannadaMarket[item.mandi] || item.mandi)
+    : item.mandi}
+</p>
+                  <h2 className="text-xl font-bold">
+  {i18n.language === "kn"
+    ? (kannadaNames[item.crop] || item.crop)
+    : item.crop}
+</h2>
                   <p className="text-sm text-slate-700">{item.kannadaName}</p>
                 </div>
                 <FaChartLine className="text-emerald-600 text-2xl" />
@@ -500,7 +1132,7 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
           ))}
         </section>
 
-        <section className="grid grid-cols-1 gap-6">
+        <section className="space-y-6">
           <form
             onSubmit={handleSubmit}
             className="bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-white/30 dark:border-slate-700 rounded-lg p-5 space-y-4 shadow-xl"
@@ -522,14 +1154,42 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
               </button>
             </div>
 
-           <input
-  list="market-products"
+          <select
   name="productName"
   value={form.productName}
-  onChange={handleChange}
-  placeholder={t("productName")}
-  className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
-/>
+  onChange={(e) => {
+  const product = e.target.value;
+
+  let category = "";
+
+  if (vegetables.includes(product))
+    category = "vegetable";
+
+  else if (fruits.includes(product))
+    category = "fruit";
+
+  else if (grains.includes(product))
+    category = "grain";
+
+  setForm(prev => ({
+    ...prev,
+    productName: product,
+    category
+  }));
+}}
+  className="w-full border p-3 rounded"
+>
+  <option value="">Select Product</option>
+
+  {mandiPrices.map((item,index) => (
+    <option
+      key={index}
+      value={item.commodity}
+    >
+      {item.commodity}
+    </option>
+  ))}
+</select>
 
 <datalist id="market-products">
 
@@ -555,33 +1215,49 @@ ${matchedProduct.crop} ಉತ್ಪನ್ನವು ${matchedProduct.mandi} ಮ�
                 placeholder={t("category")}
                 className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
               />
-              <input
-                name="quantity"
-                type="number"
-                value={form.quantity}
-                onChange={handleChange}
-                placeholder={t("quantity")}
-                className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
-              />
+             <div className="grid grid-cols-2 gap-3">
+  <input
+    name="quantity"
+    type="number"
+    value={form.quantity}
+    onChange={handleChange}
+    placeholder="Quantity"
+    className="w-full border rounded p-3"
+  />
+
+  <select
+    name="unit"
+    value={form.unit || "Quintal"}
+    onChange={handleChange}
+    className="w-full border rounded p-3"
+  >
+    <option value="Quintal">Quintal</option>
+    <option value="Kg">Kg</option>
+  </select>
+</div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                name="marketPrice"
-                type="number"
-                value={form.marketPrice}
-                onChange={handleChange}
-                placeholder={t("marketPrice")}
-                className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
-              />
-              <input
-                name="farmerPrice"
-                type="number"
-                value={form.farmerPrice}
-                onChange={handleChange}
-                placeholder={t("farmerPrice")}
-                className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
-              />
+            <input
+  type="number"
+  name="marketPrice"
+  value={form.marketPrice}
+  readOnly
+  placeholder="Market Rate (₹ / Quintal)"
+/>
+<p className="text-green-600 text-sm mt-1">
+  Current Market Rate:
+₹{selectedMarket?.price || selectedMarket?.avgPrice || 0}
+/Quintal
+</p>
+
+<input
+  type="number"
+  name="farmerPrice"
+  value={form.farmerPrice}
+  readOnly
+  placeholder="Total Amount"
+/>
             </div>
             {selectedMarket && (
 
@@ -640,31 +1316,180 @@ form.marketPrice && (
               </div>
             )}
 
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder={t("description")}
-              rows="4"
-              className="w-full border rounded p-3 bg-slate-50 dark:bg-slate-800"
-            />
+            <div>
+  <div className="flex justify-between mb-2">
+<h5>
+📍 Farmer Location
+</h5>
 
-            <input type="file" accept="image/*" onChange={handleImageUpload} />
+<select
+  value={selectedState}
+  onChange={(e) =>
+    setSelectedState(
+      e.target.value
+    )
+  }
+>
+  <option>
+    Select State
+  </option>
 
-            {form.image && (
-              <img
-                src={form.image}
-                alt="preview"
-                className="w-full h-44 object-cover rounded border"
-              />
-            )}
+  {states.map((state) => (
+    <option
+      key={state}
+      value={state}
+    >
+      {state}
+    </option>
+  ))}
+</select>
 
-            <button
-              disabled={loading}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded font-semibold disabled:opacity-60"
-            >
-              {loading ? "Submitting..." : t("submitForApproval")}
-            </button>
+<select
+  value={selectedDistrict}
+  onChange={(e) =>
+    setSelectedDistrict(
+      e.target.value
+    )
+  }
+>
+  <option>
+    Select District
+  </option>
+
+  {districts.map(
+    (district) => (
+      <option
+        key={district}
+        value={district}
+      >
+        {district}
+      </option>
+    )
+  )}
+</select>
+
+<select
+  value={selectedHobli}
+  onChange={(e) =>
+    setSelectedHobli(
+      e.target.value
+    )
+  }
+>
+  <option>
+    Select Hobli
+  </option>
+
+  {hoblis.map((hobli) => (
+    <option
+      key={hobli}
+      value={hobli}
+    >
+      {hobli}
+    </option>
+  ))}
+</select>
+
+<input
+  type="text"
+  placeholder="Village Name"
+  value={villageName}
+  onChange={(e) =>
+    setVillageName(
+      e.target.value
+    )
+  }
+/>
+
+<select
+  value={deliveryOption}
+  onChange={(e) =>
+    setDeliveryOption(
+      e.target.value
+    )
+  }
+>
+  <option value="company">
+    Company Pickup
+  </option>
+
+  <option value="farmer">
+    Farmer Direct Delivery
+  </option>
+</select>
+    <label className="font-semibold">
+      Description
+    </label>
+
+    <button
+      type="button"
+      onClick={startDescriptionVoice}
+      className="bg-blue-600 text-white px-3 py-1 rounded"
+    >
+      🎤
+      {descriptionListening
+        ? " Listening..."
+        : " Voice"}
+    </button>
+
+  </div>
+
+  <textarea
+    name="description"
+    value={form.description}
+    onChange={handleChange}
+    rows="4"
+    className="w-full border rounded p-3"
+    placeholder="Describe your product..."
+  />
+</div>
+{/* Logistics Details */}
+
+
+
+<input
+  type="file"
+  onChange={handleImageUpload}
+/>
+<div
+  className="
+  bg-green-50
+  p-4
+  rounded
+  mt-3
+"
+>
+  <h5>
+    🚚 Logistics
+  </h5>
+
+  <p>
+    Warehouse:
+    RV College
+  </p>
+
+  <p>
+    Distance:
+    {distance} KM
+  </p>
+
+  <p>
+    Delivery Mode:
+    {deliveryOption}
+  </p>
+
+  <p>
+    Logistics Cost:
+    ₹{logisticsCost}
+  </p>
+</div>
+<button
+  type="submit"
+  disabled={loading}
+  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg mt-4"
+>
+  {loading ? "Submitting..." : "Submit For Approval"}
+</button>
           </form>
 
           <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-white/30 dark:border-slate-700 rounded-lg p-5 overflow-x-auto shadow-xl">
@@ -672,13 +1497,17 @@ form.marketPrice && (
               <FaSeedling className="text-emerald-600" />
               {t("submittedProducts")}
             </h2>
+            {/* Smart Tools Section */}
+
+
+
 
             <table className="w-full text-left min-w-[720px]">
               <thead className="bg-slate-100 dark:bg-slate-800">
                 <tr>
                   <th className="p-3">
-  Image
-</th>
+                  Image
+                     </th>
                   <th className="p-3">{t("productName")}</th>
                   <th className="p-3">{t("quantity")}</th>
                   <th className="p-3">{t("marketPrice")}</th>
@@ -725,26 +1554,135 @@ form.marketPrice && (
                 No farmer submissions yet.
               </p>
             )}
-          </div>
+            <div className="bg-white rounded-lg p-5 shadow-xl mt-6">
+  <h2 className="text-xl font-bold mb-4">
+    🌾 Farmer Smart Tools
+  </h2>
+{showWeather && weather && (
+
+<div className="bg-white p-5 rounded shadow mt-4">
+
+<h3 className="font-bold text-xl mb-3">
+🌦 Current Weather
+</h3>
+
+<p>
+🌡 Temperature:
+{weather.temperature}°C
+</p>
+
+<p>
+🤒 Feels Like:
+{weather.feelsLike}°C
+</p>
+
+<p>
+💧 Humidity:
+{weather.humidity}%
+</p>
+
+<p>
+💨 Wind Speed:
+{weather.windSpeed} m/s
+</p>
+
+<p>
+☁ Cloudiness:
+{weather.cloudiness}%
+</p>
+
+<p>
+🌧 Rain Chance:
+{weather.rainProbability}%
+</p>
+
+<p>
+🌤 Condition:
+{weather.description}
+</p>
+
+</div>
+
+)}
+{
+forecast.length > 0 && (
+
+<div className="bg-white mt-4 p-5 rounded shadow">
+
+<h3 className="font-bold text-xl mb-3">
+📅 5 Day Forecast
+</h3>
+
+{
+forecast.slice(0,5).map((day,index)=>(
+<div
+key={index}
+className="border-b py-2"
+>
+
+<p>
+🌡 {day.temperature}°C
+</p>
+
+<p>
+💧 {day.humidity}%
+</p>
+
+<p>
+🌧 {day.rainProbability}%
+</p>
+
+<p>
+{day.description}
+</p>
+
+</div>
+))
+}
+
+</div>
+
+)}
+  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+
+    <button className="bg-green-600 text-white p-3 rounded">
+      🚚 Logistics
+    </button>
+
+   <button
+  onClick={getWeather}
+  className="bg-blue-600 text-white p-3 rounded"
+>
+  🌦 Weather
+</button>
+
+    <button className="bg-yellow-500 text-white p-3 rounded">
+      📈 Price Prediction
+    </button>
+
+   <button
+  onClick={getForecast}
+  className="bg-purple-600 text-white p-3 rounded"
+>
+🌱 Forecast
+</button>
+
+    <button className="bg-cyan-600 text-white p-3 rounded">
+      📍 Tracking
+    </button>
+
+  </div>
+</div>
+   </div>
+       
         </section>
       </div>
 
-      <div className="hidden xl:flex min-h-screen items-end justify-center pb-10">
-        <div className="max-w-md rounded-lg border border-white/20 bg-white/10 p-5 text-white backdrop-blur-sm shadow-xl">
-          <p className="text-sm font-semibold text-emerald-200">
-            AI Smart Agriculture
-          </p>
-          <h2 className="mt-2 text-3xl font-bold">
-            Video preview stays visible while farmers work.
-          </h2>
-          <p className="mt-3 text-white/80">
-            The dashboard tools remain on the left, and the cinematic farm
-            background stays open on the right side.
-          </p>
-        </div>
+     
       </div>
-      </div>
+      
     </div>
+    
   );
 };
 

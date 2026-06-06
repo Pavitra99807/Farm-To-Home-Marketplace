@@ -16,9 +16,11 @@ const userEmail =
   const [loading, setLoading] = useState(false);
 
   // =========================
-  // FETCH ORDERS
+  // AUTO LOAD
   // =========================
-  const fetchOrders = async () => {
+  useEffect(() => {
+
+    const fetchOrders = async () => {
 
   if (!userEmail) {
 
@@ -48,12 +50,8 @@ const userEmail =
       setLoading(false);
 
     }
-  };
+    };
 
-  // =========================
-  // AUTO LOAD
-  // =========================
-  useEffect(() => {
     fetchOrders();
   }, [userEmail]);
 

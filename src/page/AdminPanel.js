@@ -9,6 +9,8 @@ import {
   FaStar,
   FaShoppingCart,
   FaSeedling,
+  FaUsers,
+  FaUserTie,
 } from "react-icons/fa";
 
 import AdminDashboard from "./AdminDashboard";
@@ -17,6 +19,9 @@ import AddProduct from "./AddProduct";
 import AdminReviews from "./AdminReviews";
 import AdminOrders from "./AdminOrders";
 import AdminFarmerProducts from "./AdminFarmerProducts";
+import AdminFarmerInventory from "./AdminFarmerInventory";
+import AdminUsers from "./AdminUsers";
+import AdminFarmers from "./AdminFarmers";
 
 const AdminPanel = () => {
 
@@ -30,6 +35,11 @@ const AdminPanel = () => {
 
       case "dashboard":
         return <AdminDashboard />;
+        case "users":
+  return <AdminUsers />;
+
+case "farmers":
+  return <AdminFarmers />;
 
       case "products":
         return <AdminProducts />;
@@ -45,6 +55,9 @@ const AdminPanel = () => {
 
       case "farmer-products":
         return <AdminFarmerProducts />;
+
+      case "farmer-inventory":
+  return <AdminFarmerInventory />;
 
       default:
         return <AdminDashboard />;
@@ -83,6 +96,29 @@ const AdminPanel = () => {
             Dashboard
 
           </button>
+          <button
+  onClick={() => setActiveTab("users")}
+  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-lg font-semibold ${
+    activeTab === "users"
+      ? "bg-indigo-500 text-white"
+      : "bg-slate-100"
+  }`}
+>
+  <FaUsers />
+  Users
+</button>
+
+<button
+  onClick={() => setActiveTab("farmers")}
+  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-lg font-semibold ${
+    activeTab === "farmers"
+      ? "bg-orange-500 text-white"
+      : "bg-slate-100"
+  }`}
+>
+  <FaUserTie />
+  Farmers
+</button>
 
           {/* PRODUCTS */}
           <button
@@ -172,6 +208,21 @@ const AdminPanel = () => {
             Farmer Requests
 
           </button>
+          <button
+  onClick={() =>
+    setActiveTab("farmer-inventory")
+  }
+  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-lg font-semibold ${
+    activeTab === "farmer-inventory"
+      ? "bg-teal-600 text-white"
+      : "bg-slate-100"
+  }`}
+>
+  <FaBoxOpen />
+
+  Farmer Inventory
+</button>
+
 
         </div>
 

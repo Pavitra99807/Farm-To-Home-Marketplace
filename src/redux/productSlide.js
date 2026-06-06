@@ -14,6 +14,10 @@ const productSlice = createSlice({
     },
     addCartItem: (state, action) => {
       const check = state.cartItem.some((el) => el._id === action.payload._id);
+      if (check) {
+        return;
+      }
+
       const total = action.payload.price;
         state.cartItem = [
           ...state.cartItem,

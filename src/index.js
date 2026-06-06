@@ -5,8 +5,6 @@ import App from "./App";
 
 import {
   createBrowserRouter,
-  createRoutesFromElements,
-  Route,
   RouterProvider,
 } from "react-router-dom";
 
@@ -21,18 +19,14 @@ import Signup from "./page/Signup";
 import Cart from "./page/Cart";
 import Dashboard from "./page/Dashboard";
 import ProductDetails from "./page/ProductDetails";
-import AdminDashboard from "./page/AdminDashboard";
 import Checkout from "./page/Checkout";
 
 import { store } from "./redux/index";
 import { Provider } from "react-redux";
 import MyOrders from "./page/MyOrders";
-import AdminProducts from "./page/AdminProducts";
-import AddProduct from "./page/AddProduct";
 import EditProduct from "./page/EditProduct";
 import Wishlist from "./page/Wishlist";
 import Profile from "./page/Profile";
-import AdminReviews from "./page/AdminReviews";
 import AdminPanel from "./page/AdminPanel";
 import {
   Toaster,
@@ -44,6 +38,7 @@ import EditProfile
 from "./page/EditProfile";
 import "./i18n";
 import FarmerDashboard from "./page/FarmerDashboard";
+import SmartAgriTools from "./page/SmartAgriTools";
 
 const router = createBrowserRouter([
   {
@@ -63,6 +58,7 @@ const router = createBrowserRouter([
 
       { path: "dashboard", element: <Dashboard /> },
       { path: "farmer", element: <FarmerDashboard /> },
+      { path: "smart-tools", element: <SmartAgriTools /> },
       { path: "my-orders", element: <MyOrders /> },
 
      { path: "admin", element: <AdminPanel /> },

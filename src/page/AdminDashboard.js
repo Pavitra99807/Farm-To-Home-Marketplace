@@ -27,6 +27,8 @@ import {
   FaHeart,
   FaStar,
   FaRupeeSign,
+  FaUsers,
+  FaUserTie,
 } from "react-icons/fa";
 
 
@@ -35,6 +37,12 @@ const AdminDashboard = () => {
   // ORDERS STATE
   const [orders, setOrders] =
     useState([]);
+    const [stats, setStats] = useState({
+  users: 0,
+  farmers: 0,
+  products: 0,
+  orders: 0,
+});
 
   // REDUX DATA
   const products = useSelector(
@@ -86,28 +94,27 @@ const AdminDashboard = () => {
       acc + curr.totalAmount,
     0
   );
-  const analyticsData = [
-
+ const analyticsData = [
   {
     name: "Products",
     value: products.length,
   },
-
   {
     name: "Orders",
     value: orders.length,
   },
-
   {
-    name: "Wishlist",
-    value: wishlist.length,
+    name: "Users",
+    value: stats.users,
   },
-
+  {
+    name: "Farmers",
+    value: stats.farmers,
+  },
   {
     name: "Reviews",
     value: reviews.length,
   },
-
 ];
 
   // DASHBOARD DATA
@@ -140,6 +147,19 @@ const AdminDashboard = () => {
       icon: <FaStar />,
       color: "bg-yellow-500",
     },
+    {
+  title: "Total Users",
+  value: stats.users,
+  icon: <FaUsers />,
+  color: "bg-indigo-500",
+},
+
+{
+  title: "Total Farmers",
+  value: stats.farmers,
+  icon: <FaUserTie />,
+  color: "bg-orange-500",
+},
 
     {
       title: "Revenue",
@@ -149,6 +169,21 @@ const AdminDashboard = () => {
     },
 
   ];
+  useEffect(() => {
+  loadStats();
+}, []);
+
+const loadStats = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:8050/api/admin/dashboard-stats"
+    );
+
+    setStats(res.data);
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   return (
 
@@ -237,6 +272,15 @@ const AdminDashboard = () => {
             <b>{reviews.length}</b>
 
           </p>
+          <p>
+  👥 Registered Users:
+  <b>{stats.users}</b>
+</p>
+
+<p>
+  🌾 Registered Farmers:
+  <b>{stats.farmers}</b>
+</p>
 
           <p>
 

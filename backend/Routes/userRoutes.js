@@ -19,7 +19,23 @@ const {
 } = require(
   "../controllers/userController"
 );
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({
+      role: "user",
+    });
 
+    res.json({
+      success: true,
+      data: users,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 
 // SIGNUP
 router.post(
@@ -47,6 +63,7 @@ router.post(
   "/verify-otp",
   verifyOTP
 );
+router.get("/all-users", getAllUsers);
 
 module.exports =
 router;
